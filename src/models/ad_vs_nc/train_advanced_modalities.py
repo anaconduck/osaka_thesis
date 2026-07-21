@@ -71,7 +71,7 @@ def create_model_img():
     x = resnet_block(x, 512)
     
     x = GlobalAveragePooling2D()(x)
-    x = Dense(50, activation='relu')(x)
+    x = Dense(512, activation='relu')(x)
     
     return Model(img_input, x)
 
@@ -80,26 +80,19 @@ def create_model_snp():
     x = Reshape((15965, 1))(snp_input)
     x = Conv1D(filters=64, kernel_size=32, strides=32, activation='relu')(x)
     
-    attn_output = MultiHeadAttention(num_heads=4, key_dim=64)(x, x)
-    x = Add()([x, attn_output])
-    x = LayerNormalization()(x)
-    
-    ffn_output = Dense(128, activation='relu')(x)
-    ffn_output = Dense(64)(ffn_output)
-    x = Add()([x, ffn_output])
-    x = LayerNormalization()(x)
-    
-    attn_output2 = MultiHeadAttention(num_heads=4, key_dim=64)(x, x)
-    x = Add()([x, attn_output2])
-    x = LayerNormalization()(x)
-    
-    ffn_output2 = Dense(128, activation='relu')(x)
-    ffn_output2 = Dense(64)(ffn_output2)
-    x = Add()([x, ffn_output2])
-    x = LayerNormalization()(x)
+    for _ in range(4):
+        attn_output = MultiHeadAttention(num_heads=8, key_dim=64)(x, x)
+        x = Add()([x, attn_output])
+        x = LayerNormalization()(x)
+        
+        ffn_output = Dense(2048, activation='relu')(x)
+        ffn_output = Dense(512)(ffn_output)
+        ffn_output = Dropout(0.1)(ffn_output)
+        x = Add()([x, ffn_output])
+        x = LayerNormalization()(x)
     
     x = GlobalAveragePooling1D()(x)
-    x = Dense(50, activation='relu')(x)
+    x = Dense(512, activation='relu')(x)
     
     return Model(snp_input, x)
 
@@ -154,8 +147,8 @@ def calc_confusion_matrix(result, test_label,mode, learning_rate, batch_size, ep
 def cross_modal_attention(x, y):
     x = tf.expand_dims(x, axis=1)
     y = tf.expand_dims(y, axis=1)
-    a1 = MultiHeadAttention(num_heads = 4,key_dim=50)(x, y)
-    a2 = MultiHeadAttention(num_heads = 4,key_dim=50)(y, x)
+    a1 = MultiHeadAttention(num_heads = 8,key_dim=64)(x, y)
+    a2 = MultiHeadAttention(num_heads = 8,key_dim=64)(y, x)
     a1 = a1[:,0,:]
     a2 = a2[:,0,:]
     return concatenate([a1, a2])
@@ -163,14 +156,14 @@ def cross_modal_attention(x, y):
 def cross_modal_attention_split(x, y):
     x = tf.expand_dims(x, axis=1)
     y = tf.expand_dims(y, axis=1)
-    a1 = MultiHeadAttention(num_heads = 4,key_dim=50)(x, y)
-    a2 = MultiHeadAttention(num_heads = 4,key_dim=50)(y, x)
+    a1 = MultiHeadAttention(num_heads = 8,key_dim=64)(x, y)
+    a2 = MultiHeadAttention(num_heads = 8,key_dim=64)(y, x)
     return a1[:,0,:], a2[:,0,:]
 
 
 def self_attention(x):
     x = tf.expand_dims(x, axis=1)
-    attention = MultiHeadAttention(num_heads = 4, key_dim=50)(x, x)
+    attention = MultiHeadAttention(num_heads = 8, key_dim=64)(x, x)
     attention = attention[:,0,:]
     return attention
     
@@ -230,9 +223,18 @@ def multi_modal_model(mode, train_snp, train_img):
         
     ########### Output Layer ############
         
-    output = Dense(1, activation='sigmoid', name='main_output')(merged)
-    output_img = Dense(1, activation='sigmoid', name='mri_output')(dense_img)
-    output_snp = Dense(1, activation='sigmoid', name='snp_output')(dense_snp)
+    merged = Dense(512, activation='relu')(merged)
+    merged = Dropout(0.1)(merged)
+    merged = Dense(256, activation='relu')(merged)
+    output = Dense(2, activation='softmax', name='main_output')(merged)
+    
+    dense_img_aux = Dense(512, activation='relu')(dense_img)
+    dense_img_aux = Dense(256, activation='relu')(dense_img_aux)
+    output_img = Dense(2, activation='softmax', name='mri_output')(dense_img_aux)
+    
+    dense_snp_aux = Dense(512, activation='relu')(dense_snp)
+    dense_snp_aux = Dense(256, activation='relu')(dense_snp_aux)
+    output_snp = Dense(2, activation='softmax', name='snp_output')(dense_snp_aux)
     
     model = Model([in_snp, in_img], [output, output_img, output_snp])        
         
@@ -319,11 +321,11 @@ def train(mode, batch_size, epochs, learning_rate, seed):
     # compile model #
     model = multi_modal_model(mode, train_snp, train_img)
     model.compile(optimizer=Adam(learning_rate=learning_rate),
-                  loss={'main_output': 'binary_crossentropy', 
-                        'mri_output': 'binary_crossentropy', 
-                        'snp_output': 'binary_crossentropy'},
+                  loss={'main_output': 'sparse_categorical_crossentropy', 
+                        'mri_output': 'sparse_categorical_crossentropy', 
+                        'snp_output': 'sparse_categorical_crossentropy'},
                   loss_weights={'main_output': 1.0, 'mri_output': 0.3, 'snp_output': 0.3},
-                  metrics=['binary_accuracy'])
+                  metrics=['sparse_categorical_accuracy'])
     
 
     # Manual validation split since we are using a Generator

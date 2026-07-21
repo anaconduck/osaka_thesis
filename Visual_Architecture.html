@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Multimodal Deep Learning Architecture</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f8f9fa;
+            color: #333;
+            padding: 40px 20px;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        h1 {
+            text-align: center;
+            color: #2c3e50;
+            border-bottom: 2px solid #3498db;
+            padding-bottom: 10px;
+            margin-bottom: 10px;
+        }
+        h2 {
+            color: #2980b9;
+            margin-top: 50px;
+            background: #ecf0f1;
+            padding: 10px 20px;
+            border-radius: 5px;
+        }
+        .mermaid {
+            background-color: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            justify-content: center;
+        }
+        .explanation {
+            background-color: #e8f4f8;
+            padding: 20px;
+            border-left: 5px solid #3498db;
+            border-radius: 4px;
+            margin-bottom: 50px;
+            line-height: 1.6;
+            font-size: 1.05em;
+        }
+        ul {
+            margin-top: 10px;
+            padding-left: 20px;
+        }
+        li {
+            margin-bottom: 10px;
+        }
+    </style>
+</head>
+<body>
+
+    <h1>Arsitektur Terpadu (Unified Architecture)</h1>
+    <p style="text-align: center; font-size: 1.1em; color: #7f8c8d;">Pendekatan Top-Down untuk Tesis Alzheimer's Disease Classification</p>
+
+    <h2>1. The Big Picture: Posisi Sebenarnya dari Curriculum Learning</h2>
+    <div class="mermaid">
+flowchart TD
+    classDef data fill:#e3f2fd,stroke:#1565c0,stroke-width:2px,color:#000
+    classDef cl fill:#c8e6c9,stroke:#1b5e20,stroke-width:2px,color:#000
+    classDef model fill:#fff3e0,stroke:#e65100,stroke-width:2px,color:#000
+    classDef classif fill:#ffcdd2,stroke:#b71c1c,stroke-width:2px,color:#000
+    classDef loss fill:#f3e5f5,stroke:#7b1fa2,stroke-width:2px,color:#000
+
+    DATA[("Database Pasien\n(MRI & SNP)")]:::data
+    
+    subgraph CL_SYSTEM["🧠 Sistem Curriculum Learning (Bertindak sebagai Data Scheduler di luar Jaringan)"]
+        direction TB
+        SORT["Sortir Pasien Berdasarkan Tingkat Kesulitan\n(Mudah → Sulit)"]:::cl
+        PACE["Pace Scheduler\n(Pilih Batch Pasien sesuai Putaran Epoch)"]:::cl
+        SORT --> PACE
+    end
+
+    DATA --> CL_SYSTEM
+    
+    subgraph MODEL["⚙️ Arsitektur Jaringan Neural (Model Forward Pass)"]
+        direction TB
+        subgraph FEAT["1. Ekstraksi Fitur Dasar (Backbones)"]
+            direction LR
+            RES["ResNet-18\n(Ekstrak Ciri MRI)"]:::model
+            TRANS["Transformer Encoder\n(Ekstrak Ciri SNP)"]:::model
+        end
+        
+        FUSION["2. Multimodal Fusion\n(Cross-Attention & Self-Attention)"]:::model
+        
+        MLP["3. Classification Head\n(Multi-Layer Perceptron)"]:::classif
+        OUT(["Prediksi Softmax\n(Probabilitas Kasus)"]):::classif
+        
+        RES & TRANS --> FUSION
+        FUSION --> MLP --> OUT
+    end
+    
+    PACE -->|"Input Batch Baru\n(Dimulai dari pasien Mudah)"| FEAT
+    
+    LOSS{"Hitung Kesalahan\n(Cross-Entropy Loss)"}:::loss
+    OUT --> LOSS
+    
+    LOSS -.->|"Feedback Loop (Selesai 1 Epoch):\nBeritahu CL mana pasien yang gagal ditebak (Sulit)"| SORT
+    </div>
+
+    <div class="explanation">
+        <strong>Jawaban Pertanyaan Anda: "Curriculum Learning itu diletakkan setelah Fusion atau di mana?"</strong><br><br>
+        Curriculum Learning (CL) <strong>BUKAN</strong> lapisan di dalam model (*bukan layer Neural Network*). Oleh karena itu, ia tidak berada "setelah Fusion" ataupun "sebelum Fusion". CL berada <strong>DI LUAR</strong> arsitektur model.<br><br>
+        Seperti yang terlihat pada diagram di atas:
+        <ul>
+            <li><strong>Model (Kotak Oranye):</strong> Tugasnya hanya menerima data → mengekstrak → fusion → klasifikasi → mengeluarkan tebakan (probabilitas).</li>
+            <li><strong>Curriculum Learning (Kotak Hijau):</strong> Tugasnya adalah membungkus model tersebut. CL mengamati seberapa meleset tebakan model (Loss). Dari nilai Loss tersebut, CL mengatur ulang antrian pasien, lalu <strong>menyuapkan kembali data tersebut ke INPUT model</strong> untuk dipelajari ulang pada Epoch berikutnya.</li>
+        </ul>
+        Inilah mengapa CL sering disebut sebagai <em>Training Strategy</em> atau <em>Data Scheduler</em>, bukan arsitektur fisis jaringan.
+    </div>
+
+    <h2>2. Zoom-In: Modul Ekstraksi Fitur (Backbones)</h2>
+    <div class="mermaid">
+flowchart TD
+    classDef mri_input fill:#b3e5fc,stroke:#01579b,stroke-width:2px,color:#000
+    classDef mri_proc fill:#e1f5fe,stroke:#0288d1,stroke-width:1px,color:#000
+    classDef mri_feat fill:#81d4fa,stroke:#01579b,stroke-width:2px,color:#000
+    
+    classDef snp_input fill:#e1bee7,stroke:#4a148c,stroke-width:2px,color:#000
+    classDef snp_proc fill:#f3e5f5,stroke:#7b1fa2,stroke-width:1px,color:#000
+    classDef snp_feat fill:#ce93d8,stroke:#4a148c,stroke-width:2px,color:#000
+
+    subgraph MRI["🧠 Structural MRI Branch"]
+        direction TB
+        M_IN(["2D MRI Image"]):::mri_input
+        M_P1["Bias Field Correction"]:::mri_proc
+        M_P2["Skull Stripping"]:::mri_proc
+        M_P3["Spatial Registration"]:::mri_proc
+        M_P4["Cropping & Normalization"]:::mri_proc
+        M_T["2D MRI Tensor (72×72×3)"]:::mri_feat
+        M_R1["Conv2D + BN + ReLU + MaxPool"]:::mri_proc
+        M_R2["ResNet Blocks (8 layers)"]:::mri_proc
+        M_R3["Global Average Pooling 2D"]:::mri_proc
+        M_OUT[/"MRI Feature Embedding (Dense 512-d)"/]:::mri_feat
+        
+        M_IN --> M_P1 --> M_P2 --> M_P3 --> M_P4 --> M_T
+        M_T --> M_R1 --> M_R2 --> M_R3 --> M_OUT
+    end
+
+    subgraph SNP["🧬 Genetic SNP Branch"]
+        direction TB
+        S_IN(["SNP Genotype Data"]):::snp_input
+        S_P1["Quality Control (PLINK)"]:::snp_proc
+        S_P2["Missing Value Imputation"]:::snp_proc
+        S_P3["One-Hot Encoding"]:::snp_proc
+        S_P4["Conv1D (64 filters)"]:::snp_proc
+        S_P5["Positional Encoding"]:::snp_proc
+        S_T["Transformer Blocks (4 layers)"]:::snp_proc
+        S_P6["Global Average Pooling 1D"]:::snp_proc
+        S_OUT[/"SNP Feature Embedding (Dense 512-d)"/]:::snp_feat
+        
+        S_IN --> S_P1 --> S_P2 --> S_P3 --> S_P4 --> S_P5
+        S_P5 --> S_T --> S_P6 --> S_OUT
+    end
+    </div>
+
+    <h2>3. Zoom-In: Modul Multimodal Fusion & Klasifikasi</h2>
+    <div class="mermaid">
+flowchart TD
+    classDef mri_feat fill:#81d4fa,stroke:#01579b,stroke-width:2px,color:#000
+    classDef snp_feat fill:#ce93d8,stroke:#4a148c,stroke-width:2px,color:#000
+    classDef fusion_core fill:#ffe0b2,stroke:#e65100,stroke-width:2px,color:#000
+    classDef fusion_proc fill:#fff3e0,stroke:#f57c00,stroke-width:1px,color:#000
+    classDef class_head fill:#ffcdd2,stroke:#b71c1c,stroke-width:2px,color:#000
+    classDef output fill:#f8bbd0,stroke:#880e4f,stroke-width:2px,color:#000
+    classDef aux_loss fill:#fff9c4,stroke:#fbc02d,stroke-width:2px,color:#000
+
+    M_IN[/"MRI Feature Embedding (512-d)"/]:::mri_feat
+    S_IN[/"SNP Feature Embedding (512-d)"/]:::snp_feat
+
+    A_M{{"Auxiliary MRI Classifier (MLP)"}}:::aux_loss
+    A_S{{"Auxiliary SNP Classifier (MLP)"}}:::aux_loss
+
+    M_IN --> A_M
+    S_IN --> A_S
+
+    subgraph FUSION["✨ Feature Fusion (MM_SA_BA)"]
+        direction TB
+        L_M["MRI Linear Projection"]:::fusion_proc
+        L_S["SNP Linear Projection"]:::fusion_proc
+        
+        CA_M["Cross-Attention (Query: MRI, KV: SNP)"]:::fusion_core
+        CA_S["Cross-Attention (Query: SNP, KV: MRI)"]:::fusion_core
+        
+        SA_M["Self-Attention (Cross-MRI)"]:::fusion_core
+        SA_S["Self-Attention (Cross-SNP)"]:::fusion_core
+        
+        CONCAT["Concatenate [SA_MRI, SA_SNP, MRI_Embed, SNP_Embed]"]:::fusion_core
+        
+        L_M --> CA_M --> SA_M
+        L_S --> CA_S --> SA_S
+        SA_M & SA_S --> CONCAT
+    end
+
+    M_IN --> L_M
+    S_IN --> L_S
+    M_IN & S_IN --> CONCAT
+
+    subgraph CLASSIFIER["🎯 Classification Head (MLP)"]
+        direction TB
+        FC1["Fully Connected Layer (512-d)"]:::class_head
+        RELU["ReLU + Dropout (0.1)"]:::class_head
+        FC2["Fully Connected Layer (256-d)"]:::class_head
+        SOFT["Softmax Classifier (2 neurons)"]:::class_head
+        
+        CONCAT --> FC1 --> RELU --> FC2 --> SOFT
+    end
+
+    subgraph OUTPUT_FUSION["📦 Output Akhir Modul Fusion"]
+        direction TB
+        OUT_MAIN(["1. Probabilitas Klasifikasi Utama (Softmax)\nContoh: [AD: 0.85, NC: 0.15]"]):::output
+        OUT_AUX_M(["2. Probabilitas Auxiliary MRI (Softmax)"]):::aux_loss
+        OUT_AUX_S(["3. Probabilitas Auxiliary SNP (Softmax)"]):::aux_loss
+    end
+
+    SOFT --> OUT_MAIN
+    A_M --> OUT_AUX_M
+    A_S --> OUT_AUX_S
+    </div>
+
+    <h2>4. Tahap Akhir: Evaluasi Performa Model (Testing)</h2>
+    <div class="mermaid">
+flowchart TD
+    classDef eval_data fill:#e3f2fd,stroke:#1565c0,stroke-width:2px,color:#000
+    classDef eval_model fill:#fff3e0,stroke:#ef6c00,stroke-width:2px,color:#000
+    classDef eval_metric fill:#e8f5e9,stroke:#2e7d32,stroke-width:2px,color:#000
+    classDef eval_result fill:#fce4ec,stroke:#c2185b,stroke-width:2px,color:#000
+
+    subgraph DATA["🗂️ Data Pengujian (Test Set)"]
+        direction TB
+        X_TEST(["Data Pasien Baru (MRI & SNP)\n*Belum pernah dilihat saat training*"]):::eval_data
+        Y_TEST(["Label Asli / Diagnosa Dokter\n(Ground Truth)"]):::eval_data
+    end
+
+    MODEL["🧠 Trained Multimodal Model\n(Model Lulusan dari Curriculum Learning)"]:::eval_model
+    PRED["Prediksi Final Model\n(Probabilitas Softmax)"]:::eval_model
+
+    X_TEST --> MODEL --> PRED
+
+    subgraph METRICS["📊 Tahap Evaluasi Metrik"]
+        direction TB
+        COMPARE{"Bandingkan Prediksi\nvs Label Asli"}:::eval_metric
+        
+        CONF["Matriks Kebingungan (Confusion Matrix)\n(True Positive, False Positive, dll)"]:::eval_result
+        CLASS_REP["Laporan Klasifikasi\n(Akurasi, Presisi, Recall, F1-Score)"]:::eval_result
+        ROC["Kurva ROC & Skor AUC"]:::eval_result
+    end
+
+    PRED --> COMPARE
+    Y_TEST --> COMPARE
+    
+    COMPARE --> CONF
+    COMPARE --> CLASS_REP
+    COMPARE --> ROC
+
+    subgraph TASKS["🎯 Kasus Uji Tesis (Terpisah)"]
+        direction TB
+        TASK1[/"Eksperimen 1: Deteksi AD vs NC"/]:::eval_result
+        TASK2[/"Eksperimen 2: Prediksi pMCI vs sMCI"/]:::eval_result
+    end
+
+    ROC --> TASKS
+    CONF --> TASKS
+    CLASS_REP --> TASKS
+    </div>
+
+    <div class="explanation">
+        <strong>Fase Pengujian Akhir:</strong><br>
+        Setelah model selesai dilatih dan dimatangkan oleh <strong>Curriculum Learning</strong>, tahap pembelajarannya dihentikan (bobot dikunci). Model tersebut kemudian diuji menggunakan dataset tes murni untuk menghasilkan metrik Akurasi, Area Under the Curve (AUC), dan parameter evaluasi klinis lainnya.
+    </div>
+
+    <!-- Script to render mermaid -->
+    <script type="module">
+        import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs';
+        mermaid.initialize({ startOnLoad: true, theme: 'base', securityLevel: 'loose' });
+    </script>
+</body>
+</html>
