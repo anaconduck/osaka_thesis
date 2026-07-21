@@ -15,10 +15,58 @@ The project pushes the boundaries of standard multimodal approaches by utilizing
 *   **Feature Fusion (Cross -> Self Attention)**: Rather than simple concatenation, the architecture routes the extracted features through a **Cross-Modal Attention** block, splits them, and processes them through **Self-Attention** blocks before final concatenation.
 *   **Auxiliary Losses**: The network architecture prevents gradient vanishing and stabilizes training by computing three parallel losses: Main Output Loss, MRI-specific Loss, and SNP-specific Loss.
 
+### Advanced Fusion Architecture Flow
+
+```text
+[ MRI Image ]                          [ SNP Data ]
+      │                                      │
+( ResNet-18 )                          ( Transformer x2 )
+      │                                      │
+      ├──> [ MRI Output Loss ]               ├──> [ SNP Output Loss ]
+      │                                      │
+      └──────────┐               ┌───────────┘
+                 ▼               ▼
+          [ CROSS-MODAL ATTENTION ]
+                 │               │
+                 ▼               ▼
+        [ Self-Attention ] [ Self-Attention ]
+                 │               │
+                 └───────┬───────┘
+                         ▼
+                  ( Concatenate )
+                         │
+                         ▼
+                [ MAIN OUTPUT LOSS ]
+```
+
 ## Curriculum Learning Integration
 To further improve model convergence on highly complex patient cases (particularly the challenging pMCI vs sMCI task), the training pipeline implements a **Loss-based Curriculum Learning** approach via a Custom Keras Sequence Generator (`CurriculumDataGenerator`):
 1. **Warm-Up Phase**: The model trains exclusively on the easiest 30% of patient data (lowest cross-entropy loss) for the first 10 epochs.
 2. **Dynamic Scaling**: The model evaluates and sorts the dataset by prediction loss at the end of each epoch, gradually introducing "Medium" and "Hard" patient cases as training progresses.
+
+### Curriculum Learning Process Flow
+
+```text
+[ Full Patient Dataset ] 
+          │ 
+          ▼
+( Calculate Cross-Entropy Loss )
+          │
+          ▼
+[ Sort by Loss (Ascending) ]
+          │
+          ├──> Loss < 0.3    : [ Easy ]   ---> Used exclusively in Epochs 1-10 (Warm-up)
+          │
+          ├──> 0.3 < L < 0.8 : [ Medium ] \
+          │                                ---> Gradually scaled into training batches (Epochs 11-25)
+          └──> Loss > 0.8    : [ Hard ]   /
+          │
+          ▼
+[ Shuffle Selected Subset ]
+          │
+          ▼
+[ Feed to Multimodal Network ]
+```
 
 ## Usage
 Each task directory (`ad_vs_nc` and `pmci_vs_smci`) acts independently. You can run the advanced multimodal pipeline directly via the terminal:
