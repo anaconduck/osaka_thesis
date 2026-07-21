@@ -1,12 +1,9 @@
-# Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
 *$py.class
 
-# C extensions
 *.so
 
-# Distribution / packaging
 .Python
 build/
 develop-eggs/
@@ -28,7 +25,6 @@ MANIFEST
 
 # Virtual environments
 venv/
-venv_tesis/
 env/
 .env/
 ENV/
@@ -38,13 +34,11 @@ venv.bak/
 # Jupyter Notebook
 .ipynb_checkpoints
 
-# IDE / Editor
 .vscode/
 .idea/
 *.swp
 *.swo
 
-# OS generated files
 .DS_Store
 .DS_Store?
 ._*
@@ -53,20 +47,15 @@ venv.bak/
 ehthumbs.db
 Thumbs.db
 
-# Project Specific Data & Outputs
-# We ignore the data folders to prevent uploading huge files to GitHub
 data/raw/*
 data/processed/*
 !data/raw/.gitkeep
 !data/processed/.gitkeep
 
-# We DO NOT ignore data/external/ if it contains small important metadata like gene_list.csv
-# But we ignore large files inside it just in case
 data/external/*.pkl
 data/external/*.nii.gz
 data/external/*.vcf
 
-# Model output logs and images
 *.log
 log.txt
 accuracy_*.png
@@ -76,7 +65,6 @@ models_saved/
 *.hdf5
 *.keras
 
-# Other huge files
 *.csv
 *.pkl
 *.npy
@@ -85,3 +73,6 @@ models_saved/
 *.nii.gz
 *.vcf
 *.vcf.gz
+
+demo.ipynb
+demo_data/
