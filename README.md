@@ -20,23 +20,6 @@ To further improve model convergence on highly complex patient cases (particular
 1. **Warm-Up Phase**: The model trains exclusively on the easiest 30% of patient data (lowest cross-entropy loss) for the first 10 epochs.
 2. **Dynamic Scaling**: The model evaluates and sorts the dataset by prediction loss at the end of each epoch, gradually introducing "Medium" and "Hard" patient cases as training progresses.
 
-## 📂 Project Structure
-The repository is professionally structured to isolate the independent classification tasks:
-```text
-├── src/
-│   ├── data_prep/                 # Scripts for Preprocessing MRI and VCF (SNP) files
-│   ├── models/
-│   │   ├── ad_vs_nc/              # Binary Classification models for AD vs NC
-│   │   │   ├── train_images.py              (CNN / ResNet baseline)
-│   │   │   ├── train_genetic.py             (MLP / Transformer baseline)
-│   │   │   ├── train_all_modalities.py      (Standard CNN+MLP Fusion)
-│   │   │   └── train_advanced_modalities.py (ResNet + Transformer Fusion + CL)
-│   │   └── pmci_vs_smci/          # Binary Classification models for pMCI vs sMCI
-│   │       ├── ...                (Same structure as above)
-├── Curriculum_Learning_Simulation.ipynb   # Interactive Jupyter Notebook demonstrating the CL Logic
-└── README.md
-```
-
 ## Usage
 Each task directory (`ad_vs_nc` and `pmci_vs_smci`) acts independently. You can run the advanced multimodal pipeline directly via the terminal:
 
