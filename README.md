@@ -68,47 +68,6 @@ To further improve model convergence on highly complex patient cases (particular
 [ Feed to Multimodal Network ]
 ```
 
-## Mathematical Formulation (Manualization)
-
-To prove the empirical validity of the proposed models, the following outlines the step-by-step mathematical operations that happen inside the Multimodal Fusion mechanism and Curriculum Learning scheduler.
-
-### 1. Multimodal Fusion (Cross-Attention)
-Given the MRI spatial representation $F_{mri}$ and SNP sequence representation $F_{snp}$ (both projected to $d_k=512$):
-
-1. **Query, Key, Value Projections:**
-   $$Q_{mri} = F_{mri} \times W_Q$$
-   $$K_{snp} = F_{snp} \times W_K$$
-   $$V_{snp} = F_{snp} \times W_V$$
-
-2. **Attention Weight Calculation (Dot Product & Softmax):**
-   $$AttentionWeights = \text{Softmax} \left( \frac{Q_{mri} \times K_{snp}^T}{\sqrt{d_k}} \right)$$
-   *This computes a probability distribution measuring how relevant the genetic features ($K_{snp}$) are to the brain structure features ($Q_{mri}$).*
-
-3. **Cross-Attention Output:**
-   $$CrossAttnOutput = AttentionWeights \times V_{snp}$$
-
-4. **Fusion Concatenation:**
-   $$FusedFeature = \text{Concat}([F_{mri}, F_{snp}, CrossAttnOutput])$$
-
-5. **Final Logits & Probability (Classification):**
-   $$Logits = (FusedFeature \times W_{out}) + b_{out}$$
-   $$Probabilities = \text{Softmax}(Logits)$$
-
-### 2. Curriculum Learning (Pacing Scheduler)
-The pacing scheduler ensures that the model only trains on patient samples it has the capacity to learn at a given epoch $t$.
-
-1. **Model Competence ($\lambda$):**
-   $$\lambda(t) = \frac{t}{T}$$
-   *Where $t$ is the current epoch and $T$ is the total number of epochs.*
-
-2. **Sample Difficulty ($D(x)$):**
-   Each patient data $x$ is assigned a difficulty score $D(x)$ based on the raw cross-entropy loss from a baseline evaluation (e.g., distinguishing typical NC is easier than borderline MCI).
-
-3. **Data Selection Rule:**
-   A sample $x$ is allowed into the training batch for epoch $t$ **if and only if**:
-   $$D(x) \leq \lambda(t)$$
-   *If the data's difficulty exceeds the model's current capacity, the sample is rejected and deferred to later epochs.*
-
 ## Usage
 
 ```bash

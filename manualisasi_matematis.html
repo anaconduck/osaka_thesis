@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="UTF-8">
+    <title>Mathematical Manualization</title>
+    <!-- MathJax for rendering LaTeX -->
+    <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        h1,
+        h2,
+        h3 {
+            border-bottom: 1px solid #ccc;
+            padding-bottom: 5px;
+        }
+
+        pre {
+            background-color: #f4f4f4;
+            padding: 10px;
+            border: 1px solid #ddd;
+            overflow-x: auto;
+        }
+
+        code {
+            background-color: #f4f4f4;
+            padding: 2px 4px;
+            font-family: Consolas, monospace;
+        }
+
+        .math-block {
+            background-color: #fcfcfc;
+            padding: 10px;
+            border-left: 3px solid #666;
+            margin: 15px 0;
+            overflow-x: auto;
+        }
+
+        .note {
+            background-color: #e8f4f8;
+            padding: 10px;
+            border-left: 4px solid #2980b9;
+            margin: 15px 0;
+        }
+    </style>
+</head>
+
+<body>
+
+    <h1>Manualisasi Matematis</h1>
+    <p>Sesuai dengan arsitektur kode Anda (<i>Mode: MM_SA_BA</i>), model ini melewati dua tahap atensi:
+        <strong>Cross-Attention</strong> lalu dilanjutkan oleh <strong>Self-Attention</strong>. Kita menggunakan dimensi
+        sangat kecil (\( d = 2 \)) agar perhitungannya nyata.
+    </p>
+
+    <h2>1. Asumsi Nilai Input (Setelah Ekstraksi Fitur Dasar)</h2>
+    <p>Anggaplah proses ResNet dan Transformer telah selesai, menghasilkan vektor 2-Dimensi:</p>
+    <ul>
+        <li>Fitur Otak (MRI) : \( F_{mri} = [1.0, 2.0] \)</li>
+        <li>Fitur Genetik (SNP) : \( F_{snp} = [0.5, 1.5] \)</li>
+    </ul>
+
+    <h2>2. Tahap 1: CROSS-ATTENTION (Modality saling bertukar informasi)</h2>
+    <div class="note">
+        <strong>Konsep Cross-Attention:</strong><br>
+        <i>Query (Q)</i> berasal dari Modalitas A, sedangkan <i>Key (K)</i> dan <i>Value (V)</i> berasal dari Modalitas
+        B. Ini berguna agar Otak bisa "bertanya" kepada Gen, dan sebaliknya.
+    </div>
+
+    <p>Anggaplah matriks bobot (\( W \)) adalah Matriks Identitas, sehingga nilai aslinya tidak berubah. Kita hitung
+        <strong>Cross-Attention dari sisi MRI</strong> (Otak bertanya ke Gen):
+    </p>
+    <div class="math-block">
+        $$ Q_{mri} = [1.0, 2.0] $$
+        $$ K_{snp} = [0.5, 1.5] $$
+        $$ V_{snp} = [0.5, 1.5] $$
+    </div>
+
+    <p>Menghitung Skor (Dot Product) dan Softmax (menggunakan faktor <i>scaling</i> \( \sqrt{2} = 1.414 \)):</p>
+    <div class="math-block">
+        $$ Score = Q_{mri} \cdot K_{snp}^T = (1.0 \times 0.5) + (2.0 \times 1.5) = 3.5 $$
+        $$ ScaledScore = \frac{3.5}{1.414} = 2.475 $$
+    </div>
+    <p><i>(Karena ini vektor tunggal, Softmax akan menghasilkan 1.0 penuh sebagai gating)</i></p>
+    <div class="math-block">
+        $$ OutputCross_{mri} = 1.0 \times V_{snp} = [0.5, 1.5] $$
+    </div>
+
+    <p>Jika kita balik <strong>Cross-Attention dari sisi SNP</strong> (Gen bertanya ke Otak):</p>
+    <div class="math-block">
+        $$ Score = Q_{snp} \cdot K_{mri}^T = (0.5 \times 1.0) + (1.5 \times 2.0) = 3.5 $$
+        $$ OutputCross_{snp} = 1.0 \times V_{mri} = [1.0, 2.0] $$
+    </div>
+    <p><i>Perhatikan bahwa fitur saling "menyeberang" (Cross).</i></p>
+
+
+    <h2>3. Tahap 2: SELF-ATTENTION (Memperdalam konteks dirinya sendiri)</h2>
+    <div class="note">
+        <strong>Konsep Self-Attention:</strong><br>
+        <i>Query (Q)</i>, <i>Key (K)</i>, dan <i>Value (V)</i> SEMUANYA berasal dari data yang sama. Ini berguna agar
+        fitur hasil Cross-Attention tadi bisa memfokuskan ulang relasi ke dirinya sendiri.
+    </div>
+
+    <p>Kita terapkan Self-Attention pada \( OutputCross_{mri} \):</p>
+    <div class="math-block">
+        $$ Q = K = V = OutputCross_{mri} = [0.5, 1.5] $$
+        $$ Score = Q \cdot K^T = (0.5 \times 0.5) + (1.5 \times 1.5) = 0.25 + 2.25 = 2.5 $$
+        $$ ScaledScore = \frac{2.5}{1.414} = 1.768 $$
+        $$ OutputSelf_{mri} = \text{Softmax}(1.768) \times V = 1.0 \times [0.5, 1.5] = [0.5, 1.5] $$
+    </div>
+
+    <p>Begitu pula Self-Attention pada \( OutputCross_{snp} \):</p>
+    <div class="math-block">
+        $$ OutputSelf_{snp} = [1.0, 2.0] $$
+    </div>
+
+
+    <h2>4. Penggabungan Fitur Terakhir (Fusion Layer)</h2>
+    <p>Sesuai arsitektur kode <code>concatenate([vv_att, aa_att, dense_img, dense_snp])</code>, kita merakit vektor
+        gabungan (Panjang 8 dimensi):</p>
+    <div class="math-block">
+        $$ Fused = [OutputSelf_{mri} , OutputSelf_{snp} , F_{mri} , F_{snp}] $$
+        $$ Fused = [0.5, 1.5, \quad 1.0, 2.0, \quad 1.0, 2.0, \quad 0.5, 1.5] $$
+    </div>
+
+    <h2>5. Klasifikasi Akhir (MLP)</h2>
+    <p>Kita proyeksikan array Fused (8-dimensi) ini ke dalam 3 angka logits untuk (NC, MCI, AD). Anggap ada matriks
+        bobot acak \( W_{out} \) (8x3) dan bias 0, menghasilkan hitungan raw:</p>
+    <div class="math-block">
+        $$ Logits = [0.75, 2.5, 2.75] $$
+    </div>
+
+    <p>Kita konversi Logits menjadi Persentase Probabilitas Penyakit (Softmax dengan eksponensial matematis):</p>
+    <div class="math-block">
+        $$ \text{Total } (e^{0.75} + e^{2.5} + e^{2.75}) = 2.117 + 12.182 + 15.642 = 29.941 $$
+        $$ Probabilitas_{NC} = \frac{2.117}{29.941} = 0.07 \ (7\%) $$
+        $$ Probabilitas_{MCI} = \frac{12.182}{29.941} = 0.41 \ (41\%) $$
+        $$ Probabilitas_{AD} = \frac{15.642}{29.941} = 0.52 \ (52\%) $$
+    </div>
+
+    <p><strong>KESIMPULAN:</strong> Pasien memiliki probabilitas tertinggi pada 52%, sehingga didiagnosis menderita
+        <strong>Alzheimer's Disease (AD)</strong>.
+    </p>
+
+</body>
+
+</html>
